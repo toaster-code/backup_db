@@ -1,6 +1,6 @@
 # Introduction
 
-This application is an UI that allows to manipulate backups of the database files of the Cefor project.
+This application is an UI that allows to manipulate backups of the database files a project.
 This provides the following functions:
 
 * Create a backup of the database files
