@@ -28,41 +28,66 @@ class BackupItem():
     def __init__(self, path, comment: str = None) -> None:
         """Initialize a backup item."""
         try:
-            self.check_folder_for_errors(path, raise_errors=True)
+            # Check if the backup folder is valid(naming, contents,...) so we can initialize the object
+            self.check_errors(path, raise_errors=True)
         except ValueError as e:
             raise e
         else:
-            # Ok, the backup folder is valid, so we can initialize the object
-            # set the relative path
+            # set the relative path to the item as a pathlib.Path object
             self.relative_path = Path(path)
-            # set the comment
-            self.log(comment)
+            # initialize the log file (create it if it does not exist)
+            self.init_log(comment)
 
-    def log(self, comment: str = None):
-        """Return the backup comments."""
+    def init_log(self, comment:str=None):
+        """Initialize the log file."""
         log_file = self.path() / 'backup.log'
         # touch the file to allow it to exist
         log_file.touch(exist_ok=True)
         if comment is None:
-            with open(log_file, 'r') as log_file:
-                return log_file.read()
-        elif isinstance(comment, str):
-            with open(log_file, 'w') as log_file:
-                log_file.write(comment)
-        else:
-            raise ValueError('Comment must be a string')
+            # read the comment from the log file
+            self.comment = self.write_log(comment)
 
-    @classmethod
-    def root(cls, root_path: str):
-        """Set the backup root path."""
-        # test if path exists
-        if not Path(root_path).exists():
-            raise FileNotFoundError(f'Backup path {root_path} does not exist.')
-        else:
-            cls.backup_path = root_path
+    def read_log(self):
+        """ Read the log file.
+
+        Parameters
+        ----------
+        comment : str
+            The comment to be written to the log file.
+            If None, the comment will be read from the log file.
+
+        Returns
+        -------
+        str
+            The contents from the log file.
+        """
+        log_file = self.path() / 'backup.log'
+        with open(log_file, 'r') as log_file:
+            return log_file.read()
+
+    def write_log(self, text: str = None):
+        """ write the log file.
+
+        Parameters
+        ----------
+        text : str
+            The text to be written to the log file.
+
+        Raises
+        ------
+        ValueError
+            If text is not None and is not a string.
+        """
+
+        log_file = self.path() / 'backup.log'
+        # touch the file to allow it to exist
+        log_file.touch(exist_ok=True)
+        with open(log_file, 'w') as log_file:
+            log_file.write(text)
+
 
     def path(self):
-        """Return the fullpath."""
+        """Return the absolute path of the backup item."""
         return Path(self.backup_path, self.relative_path)
 
     @staticmethod
@@ -80,7 +105,7 @@ class BackupItem():
             True if the backup path is valid, False otherwise.
         """
         try:
-            BackupItem.check_folder_for_errors(path)
+            BackupItem.check_errors(path)
         except Exception:
             return False
         else:
@@ -95,7 +120,7 @@ class BackupItem():
             True if the backup folder is valid, False otherwise.
         """
         try:
-            self.check_folder_for_errors(self.path)
+            self.check_errors(self.path)
         except Exception:
             return False
         else:
@@ -106,7 +131,7 @@ class BackupItem():
         return Path(self.path).name
 
     @classmethod
-    def check_folder_for_errors(cls, backup_folder: str):
+    def check_errors(cls, backup_folder: str):
         """Validates that the backup directory is valid.
 
         The directory to be valid must meet the following criteria:
